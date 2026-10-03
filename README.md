@@ -14,6 +14,12 @@ Public installers for our desktop apps. Source code lives in separate (usually p
 - **macOS (DMG)** и **Windows x64 (ZIP)** → [релиз / release `videotext-v0.1.0`](../../releases/tag/videotext-v0.1.0)
 - Windows пока содержит основной сценарий; плеер, OCR, очередь и история — только в macOS-версии.
 
+### MoCapGate — мокап из видео / motion capture from video
+Снимите человека на телефон или веб-камеру — анимация скелета BVH/FBX для Blender, Maya и движков. / Film a person with a phone or webcam — get a BVH/FBX skeleton animation for Blender, Maya and game engines.
+
+- **macOS Apple Silicon и Intel (DMG или быстрый старт ZIP)**, **Windows 10/11 (быстрый старт ZIP)**, **Linux / любая ОС (переносной ZIP)** → [релиз / release `mocapgate-v0.3.1`](../../releases/tag/mocapgate-v0.3.1)
+- Исходники открыты / open source (MIT): [MaverickGH/mocapgate](https://github.com/MaverickGH/mocapgate). Сборки без подписи; GVHMR и SMPL-X — только некоммерческое использование / non-commercial only.
+
 ---
 
 Все релизы: вкладка **[Releases](../../releases)**. / All releases: the **[Releases](../../releases)** tab.
