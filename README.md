@@ -1,15 +1,19 @@
-# VideoText — загрузки / downloads
+# App Releases
 
-Публичные установщики приложения **VideoText** (видео → текст, субтитры и перевод). Исходный код в приватном репозитории; здесь только готовые сборки.
+Публичные установщики наших десктоп-приложений. Исходный код живёт в отдельных (как правило приватных) репозиториях — здесь только готовые сборки для скачивания.
 
-Public installers for **VideoText** (video → text, subtitles and translation). Source code lives in a private repository; this repo hosts the release binaries only.
+Public installers for our desktop apps. Source code lives in separate (usually private) repositories; this repo hosts the downloadable builds only.
 
-## Скачать / Download
-Берите последнюю версию на вкладке **[Releases](../../releases/latest)**:
-- **macOS** — `VideoText.dmg` (macOS 14+)
-- **Windows x64** — `VideoText-Windows-x64.zip`
+**Схема тегов / tag scheme:** `<app>-vX.Y.Z` — у каждого приложения свои релизы.
 
-Grab the latest build from the **[Releases](../../releases/latest)** tab.
+## Приложения / Apps
 
-> Windows-сборка пока содержит основной сценарий; плеер, OCR, очередь и история доступны только в macOS-версии.
-> The Windows build currently ships the core flow; player, OCR, queue and history are macOS-only for now.
+### VideoText — видео → текст, субтитры и перевод
+Десктоп-приложение (macOS + Windows): распознаёт речь из видео и делает редактируемый текст, субтитры (TXT/SRT/WebVTT) и перевод. / Desktop app (macOS + Windows): transcribe video speech into editable text, subtitles and translation.
+
+- **macOS (DMG)** и **Windows x64 (ZIP)** → [релиз / release `videotext-v0.1.0`](../../releases/tag/videotext-v0.1.0)
+- Windows пока содержит основной сценарий; плеер, OCR, очередь и история — только в macOS-версии.
+
+---
+
+Все релизы: вкладка **[Releases](../../releases)**. / All releases: the **[Releases](../../releases)** tab.
