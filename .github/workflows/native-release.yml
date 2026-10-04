@@ -28,12 +28,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: MaverickGH/mocapgate-native-build
-          ref: 2d6f471031c19871f63f6459e9818667c62fb2e1
+          ref: fecee6e56391c33ab0fd2672146a78668c784598
           ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
           persist-credentials: false
           path: source
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12.13" }
+        with: { python-version: "3.12" }
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - uses: dtolnay/rust-toolchain@stable
@@ -53,7 +53,15 @@ jobs:
       - name: Blender for target export checks
         if: runner.os == 'Windows'
         run: choco install blender --yes --no-progress
-      - run: python -m pip install -r requirements-native.txt
+      - name: Fixed standalone build interpreter
+        shell: bash
+        run: |
+          python -m pip install uv==0.12.19
+          uv python install 3.12.13
+          uv venv --python 3.12.13 --seed .build
+          if [ "$RUNNER_OS" = Windows ]; then build_python=.build/Scripts/python.exe; else build_python=.build/bin/python; fi
+          uv pip install --python "$build_python" -r requirements-native.txt
+          "$build_python" -c "import os,sys; from pathlib import Path; f=open(os.environ['GITHUB_PATH'],'a'); f.write(str(Path(sys.executable).parent)+'\n'); f.close()"
       - name: Compile selected modules without publishing compiler source excerpts
         shell: bash
         run: |
