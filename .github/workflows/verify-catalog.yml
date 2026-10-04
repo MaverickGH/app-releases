@@ -2,7 +2,7 @@ name: verify-public-catalog
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   verify:
     strategy:
