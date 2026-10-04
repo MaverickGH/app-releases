@@ -88,8 +88,9 @@ jobs:
         shell: bash
         run: |
           export MOCAPGATE_NATIVE_PACKAGE="$GITHUB_WORKSPACE/source/dist/native-package"
+          if [ "$RUNNER_OS" = Linux ]; then export APPIMAGE_EXTRACT_AND_RUN=1 NO_STRIP=1; fi
           cd apps/studio/desktop
-          npx tauri build --bundles ${{ matrix.bundles }}
+          npx tauri build --verbose --bundles ${{ matrix.bundles }}
       - name: Build native Windows installer with MSVC on PATH
         if: runner.os == 'Windows'
         shell: pwsh
