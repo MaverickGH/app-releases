@@ -1,0 +1,93 @@
+name: native-release-platforms
+# Private source stays private; read-only deploy key is an Actions secret, never an artifact.
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            bundles: app,dmg
+          - os: macos-15-intel
+            bundles: app,dmg
+          - os: windows-latest
+            bundles: nsis,msi
+          - os: ubuntu-22.04
+            bundles: deb,appimage
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - name: Checkout private source at the reviewed revision
+        uses: actions/checkout@v4
+        with:
+          repository: MaverickGH/mocapgate-native-build
+          ref: 2d6f471031c19871f63f6459e9818667c62fb2e1
+          ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12.13" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with: { workspaces: source/apps/studio/desktop/src-tauri }
+      - uses: FedericoCarboni/setup-ffmpeg@v3
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - name: Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf blender
+      - name: Blender for target export checks
+        if: runner.os == 'macOS'
+        run: brew install --cask blender
+      - name: Blender for target export checks
+        if: runner.os == 'Windows'
+        run: choco install blender --yes --no-progress
+      - run: python -m pip install -r requirements-native.txt
+      - name: Compile selected modules without publishing compiler source excerpts
+        shell: bash
+        run: |
+          if ! python scripts/native_packaging.py build --out dist/native-package > native-build-private.log 2>&1; then
+            echo "Native build failed. Reproduce in the private source checkout; private compiler log is not published."
+            exit 1
+          fi
+          python scripts/native_packaging.py check dist/native-package
+      - run: python tests/test_native_package.py dist/native-package --require-blender
+      - name: Preserve complete native package for public snapshot assembly
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-package-${{ matrix.os }}
+          path: source/dist/native-package/
+          include-hidden-files: true
+      - run: python scripts/native_packaging.py zip dist/native-package --out dist/MoCapGate-native-${{ runner.os }}-${{ runner.arch }}.zip
+      - run: npm ci
+        working-directory: source/apps/studio/desktop
+      - name: Build native installer
+        shell: bash
+        run: |
+          export MOCAPGATE_NATIVE_PACKAGE="$GITHUB_WORKSPACE/source/dist/native-package"
+          cd apps/studio/desktop
+          npx tauri build --bundles ${{ matrix.bundles }}
+      - name: Verify resources from the built macOS app
+        if: runner.os == 'macOS'
+        run: python tests/test_native_package.py "apps/studio/desktop/src-tauri/target/release/bundle/macos/MoCapGate Studio.app/Contents/Resources/mocapgate"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mocapgate-studio-${{ matrix.os }}
+          path: |
+            source/dist/MoCapGate-native-*.zip
+            source/apps/studio/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            source/apps/studio/desktop/src-tauri/target/release/bundle/nsis/*.exe
+            source/apps/studio/desktop/src-tauri/target/release/bundle/msi/*.msi
+            source/apps/studio/desktop/src-tauri/target/release/bundle/deb/*.deb
+            source/apps/studio/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
