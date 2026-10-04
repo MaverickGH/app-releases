@@ -17,6 +17,9 @@ jobs:
             run: '37202975134'
             artifact: mocapgate-studio-ubuntu-22.04
     runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@v4
         with:
