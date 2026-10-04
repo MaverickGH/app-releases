@@ -84,10 +84,18 @@ jobs:
       - run: npm ci
         working-directory: source/apps/studio/desktop
       - name: Build native installer
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           export MOCAPGATE_NATIVE_PACKAGE="$GITHUB_WORKSPACE/source/dist/native-package"
           cd apps/studio/desktop
+          npx tauri build --bundles ${{ matrix.bundles }}
+      - name: Build native Windows installer with MSVC on PATH
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:MOCAPGATE_NATIVE_PACKAGE = "$env:GITHUB_WORKSPACE/source/dist/native-package"
+          Set-Location apps/studio/desktop
           npx tauri build --bundles ${{ matrix.bundles }}
       - name: Verify resources from the built macOS app
         if: runner.os == 'macOS'
