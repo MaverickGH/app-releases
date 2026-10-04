@@ -39,7 +39,7 @@ jobs:
           PYCODE
           manifest=$(find squashfs-root -name native-manifest.json -print -quit)
           python tests/test_native_package.py "$(dirname "$manifest")" --require-blender
-          mksquashfs squashfs-root filesystem.squashfs -root-owned -noappend -comp xz
+          mksquashfs squashfs-root filesystem.squashfs -root-owned -noappend -comp zstd
           cat runtime filesystem.squashfs > MoCapGate-0.3.2-linux-x64.AppImage
           chmod +x MoCapGate-0.3.2-linux-x64.AppImage
           mkdir final
