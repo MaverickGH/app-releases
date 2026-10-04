@@ -2,20 +2,17 @@ name: native-release-platforms
 # Private source stays private; read-only deploy key is an Actions secret, never an artifact.
 on:
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Runner/bundle matrix as JSON (default: all four targets)'
+        required: false
+        default: '[{"os":"macos-15","bundles":"app,dmg"},{"os":"macos-15-intel","bundles":"app,dmg"},{"os":"windows-latest","bundles":"nsis,msi"},{"os":"ubuntu-22.04","bundles":"deb,appimage"}]'
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-15
-            bundles: app,dmg
-          - os: macos-15-intel
-            bundles: app,dmg
-          - os: windows-latest
-            bundles: nsis,msi
-          - os: ubuntu-22.04
-            bundles: deb,appimage
+        include: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ matrix.os }}
     env:
       PYTHONUTF8: "1"
@@ -39,14 +36,19 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with: { workspaces: source/apps/studio/desktop/src-tauri }
-      - uses: FedericoCarboni/setup-ffmpeg@v3
+      - name: FFmpeg on macOS
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg
+      - name: FFmpeg on Windows
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --yes --no-progress
       - uses: ilammy/msvc-dev-cmd@v1
         if: runner.os == 'Windows'
       - name: Linux desktop dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf blender
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf blender ffmpeg
       - name: Blender for target export checks
         if: runner.os == 'macOS'
         run: brew install --cask blender
