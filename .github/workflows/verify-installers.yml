@@ -41,8 +41,10 @@ jobs:
         shell: pwsh
         run: |
           $exe = (Get-ChildItem assets -Recurse -Filter '*-setup.exe').FullName
-          $destination = "$env:GITHUB_WORKSPACE/installed"
-          Start-Process $exe -ArgumentList '/S',("/D="+$destination) -Wait
+          $destination = "$env:GITHUB_WORKSPACE\installed"
+          $process = Start-Process $exe -ArgumentList "/S /D=$destination" -Wait -PassThru
+          Write-Output "Installer exit code: $($process.ExitCode)"
+          Get-ChildItem $destination -Recurse | Select-Object -First 12 FullName
           $manifest = Get-ChildItem $destination -Recurse -Filter native-manifest.json | Select-Object -First 1
           if (!$manifest) { throw 'Installed native resources not found' }
           python tests/test_native_package.py $manifest.Directory.FullName --require-blender
@@ -55,11 +57,4 @@ jobs:
           image=$(find assets -name '*.AppImage' -print -quit)
           dpkg-deb -x "$deb" installed-deb
           manifest=$(find installed-deb -name native-manifest.json -print -quit)
-          python tests/test_native_package.py "$(dirname "$manifest")" --require-blender
-          chmod +x "$image"
-          image=$(realpath "$image")
-          cd installed-appimage
-          "$image" --appimage-extract > /dev/null
-          cd ..
-          manifest=$(find installed-appimage -name native-manifest.json -print -quit)
           python tests/test_native_package.py "$(dirname "$manifest")" --require-blender

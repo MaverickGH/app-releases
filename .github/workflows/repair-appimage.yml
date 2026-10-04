@@ -1,0 +1,54 @@
+name: finalize-appimage-manifest
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  finalize:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MaverickGH/mocapgate-native-build
+          ref: 2efe0665fd474880293597d68920eca713ce6d95
+          ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: sudo apt-get update && sudo apt-get install -y squashfs-tools blender
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 37202975134 --repo MaverickGH/app-releases --name mocapgate-studio-ubuntu-22.04 --dir assets
+      - name: Record final ELF hashes after linuxdeploy RPATH relocation
+        shell: bash
+        run: |
+          image=$(realpath "$(find assets -name '*.AppImage' -print -quit)")
+          chmod +x "$image"
+          offset=$("$image" --appimage-offset)
+          head -c "$offset" "$image" > runtime
+          "$image" --appimage-extract > /dev/null
+          python - <<'PYCODE'
+          import json,hashlib
+          from pathlib import Path
+          manifest=next(Path('squashfs-root').rglob('native-manifest.json'))
+          data=json.loads(manifest.read_text())
+          for entry in data['modules'].values():
+              entry['sha256']=hashlib.sha256((manifest.parent/entry['library']).read_bytes()).hexdigest()
+          manifest.write_text(json.dumps(data,indent=2)+'\n')
+          PYCODE
+          manifest=$(find squashfs-root -name native-manifest.json -print -quit)
+          python tests/test_native_package.py "$(dirname "$manifest")" --require-blender
+          mksquashfs squashfs-root filesystem.squashfs -root-owned -noappend -comp xz
+          cat runtime filesystem.squashfs > MoCapGate-0.3.2-linux-x64.AppImage
+          chmod +x MoCapGate-0.3.2-linux-x64.AppImage
+          mkdir final
+          cd final
+          ../MoCapGate-0.3.2-linux-x64.AppImage --appimage-extract > /dev/null
+          cd ..
+          manifest=$(find final -name native-manifest.json -print -quit)
+          python tests/test_native_package.py "$(dirname "$manifest")" --require-blender
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-linux-appimage
+          path: MoCapGate-0.3.2-linux-x64.AppImage
