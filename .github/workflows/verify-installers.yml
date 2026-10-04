@@ -1,0 +1,65 @@
+name: verify-native-installers
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            run: '37202034107'
+            artifact: mocapgate-studio-windows-latest
+          - os: ubuntu-22.04
+            run: '37202975134'
+            artifact: mocapgate-studio-ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MaverickGH/mocapgate-native-build
+          ref: 2efe066
+          ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Blender on Windows
+        if: runner.os == 'Windows'
+        run: choco install blender --yes --no-progress
+      - name: Blender on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y blender
+      - name: Download built installer artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download ${{ matrix.run }} --repo MaverickGH/app-releases --name ${{ matrix.artifact }} --dir assets
+      - name: Verify installed Windows EXE resources
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = (Get-ChildItem assets -Recurse -Filter '*-setup.exe').FullName
+          $destination = "$env:GITHUB_WORKSPACE/installed"
+          Start-Process $exe -ArgumentList '/S',("/D="+$destination) -Wait
+          $manifest = Get-ChildItem $destination -Recurse -Filter native-manifest.json | Select-Object -First 1
+          if (!$manifest) { throw 'Installed native resources not found' }
+          python tests/test_native_package.py $manifest.Directory.FullName --require-blender
+      - name: Verify extracted Linux DEB and AppImage resources
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir installed-deb installed-appimage
+          deb=$(find assets -name '*.deb' -print -quit)
+          image=$(find assets -name '*.AppImage' -print -quit)
+          dpkg-deb -x "$deb" installed-deb
+          manifest=$(find installed-deb -name native-manifest.json -print -quit)
+          python tests/test_native_package.py "$(dirname "$manifest")" --require-blender
+          chmod +x "$image"
+          image=$(realpath "$image")
+          cd installed-appimage
+          "$image" --appimage-extract > /dev/null
+          cd ..
+          manifest=$(find installed-appimage -name native-manifest.json -print -quit)
+          python tests/test_native_package.py "$(dirname "$manifest")" --require-blender
