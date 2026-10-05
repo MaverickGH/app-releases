@@ -1,0 +1,19 @@
+name: gvhmr-dependency-check
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  imports:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MaverickGH/mocapgate-native-build
+          ref: 4ec0de485dd3aa585ac3360ffe0c066865304b5a
+          ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y python3-venv git ffmpeg build-essential
+      - name: Install actual upstream Linux dependencies and import extension modules
+        run: python3 scripts/setup_gvhmr.py --verify-dependencies

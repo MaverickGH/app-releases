@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: MaverickGH/mocapgate-native-build
-          ref: 2efe0665fd474880293597d68920eca713ce6d95
+          ref: 4ec0de485dd3aa585ac3360ffe0c066865304b5a
           ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
           persist-credentials: false
           path: source
