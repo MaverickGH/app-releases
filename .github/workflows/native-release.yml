@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: MaverickGH/mocapgate-native-build
-          ref: c6c89c29f4a68bb7d5f4337bb731f01b1501dfd2
+          ref: 670edb0aabc5f38987e07ffec10aee3e84006c8d
           ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
           persist-credentials: false
           path: source
@@ -74,6 +74,8 @@ jobs:
           fi
           python scripts/native_packaging.py check dist/native-package
       - run: python tests/test_native_package.py dist/native-package --require-blender
+      - name: Verify automatic setup from a clean user profile
+        run: python tests/verify_managed_setup.py dist/native-package
       - name: Preserve complete native package for public snapshot assembly
         uses: actions/upload-artifact@v4
         with:
