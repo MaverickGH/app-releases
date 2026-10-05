@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: MaverickGH/mocapgate-native-build
-          ref: 670edb0aabc5f38987e07ffec10aee3e84006c8d
+          ref: 39c6fad4b71e4c14f78786157eba040cdf23ba7d
           ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
           persist-credentials: false
           path: source
@@ -65,6 +65,8 @@ jobs:
           uv pip install --python "$build_python" -r requirements-native.txt
           "$build_python" -c "import os,sys; from pathlib import Path; f=open(os.environ['GITHUB_PATH'],'a'); f.write(str(Path(sys.executable).parent)+'\n'); f.close()"
       - name: Compile selected modules without publishing compiler source excerpts
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           if ! python scripts/native_packaging.py build --out dist/native-package > native-build-private.log 2>&1; then
