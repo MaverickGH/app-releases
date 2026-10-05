@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: MaverickGH/mocapgate-native-build
-          ref: ef2a4faf4003f30e9301c50f4fb54aabe6cb0ade
+          ref: 611250f506d21f5bc4ae64d195ec454f5ee6a530
           ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
           persist-credentials: false
       - run: sudo apt-get update && sudo apt-get install -y python3-venv git ffmpeg build-essential
