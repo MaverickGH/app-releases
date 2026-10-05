@@ -1,0 +1,76 @@
+name: publish-verified-mocapgate-beta3
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MaverickGH/mocapgate-native-build
+          ref: 571b64a1723852a88d9e9e6c3b9625e339617735
+          ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Require successful platform and installer checks
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          for run in ('37307926306','37308730022','37309216624'):
+              data=json.loads(subprocess.check_output(['gh','run','view',run,'--repo','MaverickGH/app-releases','--json','status,conclusion']))
+              assert data['status']=='completed' and data['conclusion']=='success',data
+          PY
+      - name: Download tested packages
+        run: |
+          gh run download 37307926306 --repo MaverickGH/app-releases --name mocapgate-studio-windows-latest --dir assets/windows
+          gh run download 37307926306 --repo MaverickGH/app-releases --name mocapgate-studio-ubuntu-22.04 --dir assets/linux
+          gh run download 37307926306 --repo MaverickGH/app-releases --name mocapgate-studio-macos-15 --dir assets/macos-arm64
+          gh run download 37307926306 --repo MaverickGH/app-releases --name mocapgate-studio-macos-15-intel --dir assets/macos-intel
+          gh run download 37308730022 --repo MaverickGH/app-releases --name verified-linux-appimage --dir verified-appimage
+      - name: Check native archive contents and prepare release files
+        run: |
+          python - <<'PY'
+          import sys,tempfile,zipfile,shutil,hashlib
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          import native_packaging
+          root=Path('release-files');root.mkdir()
+          for label,target in [('windows','windows-x64'),('linux','linux-x64'),('macos-arm64','macos-arm64'),('macos-intel','macos-x64')]:
+              for p in (Path('assets')/label).rglob('*'):
+                  if not p.is_file() or p.suffix not in ('.zip','.exe','.msi','.deb','.dmg'):continue
+                  suffix='-native.zip' if p.suffix=='.zip' else '-setup.exe' if p.suffix=='.exe' else p.suffix
+                  shutil.copy2(p,root/('MoCapGate-0.3.3-beta.3-'+target+suffix))
+                  if p.suffix=='.zip':
+                      with tempfile.TemporaryDirectory() as tmp:
+                          with zipfile.ZipFile(p) as z:z.extractall(tmp)
+                          native_packaging.check(Path(tmp))
+          images=list(Path('verified-appimage').rglob('*.AppImage'));assert len(images)==1
+          shutil.copy2(images[0],root/'MoCapGate-0.3.3-beta.3-linux-x64.AppImage')
+          for name in ('automatic-setup.en.md','automatic-setup.ru.md'):shutil.copy2(Path('docs')/name,root/name)
+          files=sorted(root.iterdir());assert len(files)==12,len(files)
+          (root/'SHA256SUMS.txt').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in files))
+          PY
+      - name: Upload new assets and publish the verified prerelease
+        run: |
+          gh release upload mocapgate-v0.3.3-beta.3 --repo MaverickGH/app-releases release-files/*
+          python - <<'PY'
+          import json,subprocess,hashlib
+          from pathlib import Path
+          data=json.loads(subprocess.check_output(['gh','release','view','mocapgate-v0.3.3-beta.3','--repo','MaverickGH/app-releases','--json','assets']))
+          assert len(data['assets'])==13
+          for asset in data['assets']:
+              p=Path('release-files')/asset['name']
+              assert asset['size']==p.stat().st_size
+          PY
+          gh release edit mocapgate-v0.3.3-beta.3 --repo MaverickGH/app-releases --draft=false --prerelease --latest=false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-beta3-release-assets
+          path: release-files/
