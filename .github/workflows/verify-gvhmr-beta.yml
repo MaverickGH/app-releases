@@ -1,0 +1,52 @@
+name: verify-gvhmr-beta-installers
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: 'Successful native Windows build run ID'
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: MaverickGH/mocapgate-native-build
+          ref: 6c44a02b375cf408e78d0fd0e3b465e53cbee0f1
+          ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: choco install blender --yes --no-progress
+      - name: Download tested build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download ${{ inputs.build_run }} --repo MaverickGH/app-releases --name mocapgate-studio-windows-latest --dir assets
+      - name: Install EXE and verify actual bundled resources
+        shell: pwsh
+        run: |
+          $exe = (Get-ChildItem assets -Recurse -Filter '*-setup.exe').FullName
+          $destination = "$env:GITHUB_WORKSPACE\installed"
+          $process = Start-Process $exe -ArgumentList "/S /D=$destination" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "EXE installer failed: $($process.ExitCode)" }
+          $manifest = Get-ChildItem $destination -Recurse -Filter native-manifest.json | Select-Object -First 1
+          if (!$manifest) { throw 'Installed native resources not found' }
+          python tests/test_native_package.py $manifest.Directory.FullName --require-blender
+          if ($LASTEXITCODE -ne 0) { throw 'Installed package verification failed' }
+      - name: Extract MSI and verify bundled module hashes
+        shell: pwsh
+        run: |
+          $msi = (Get-ChildItem assets -Recurse -Filter '*.msi').FullName
+          $destination = "$env:GITHUB_WORKSPACE\installed-msi"
+          $process = Start-Process msiexec.exe -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$destination`"" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "MSI extraction failed: $($process.ExitCode)" }
+          $manifest = Get-ChildItem $destination -Recurse -Filter native-manifest.json | Select-Object -First 1
+          if (!$manifest) { throw 'MSI native resources not found' }
+          python scripts/native_packaging.py check $manifest.Directory.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'MSI native hash verification failed' }
