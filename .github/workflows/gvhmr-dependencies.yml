@@ -11,9 +11,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: MaverickGH/mocapgate-native-build
-          ref: 462a668d13755b757a82f2d84bac45e4a0784121
+          ref: 33f748d59e7769bb9cdbbf8f7f738197af6aea09
           ssh-key: ${{ secrets.MOCAPGATE_SOURCE_READ_KEY }}
           persist-credentials: false
       - run: sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y python3-venv python3-tk git ffmpeg build-essential libgl1 libegl1 libglib2.0-0
       - name: Install actual upstream Linux dependencies and import extension modules
         run: python3 scripts/setup_gvhmr.py --verify-dependencies
+      - name: Run portable rest-joint worker in the actual Python 3.10 model environment
+        shell: bash
+        run: |
+          ~/.cache/mocapgate/gvhmr/venv/bin/python - <<'PYMODEL'
+          import json, tempfile, subprocess, sys
+          from pathlib import Path
+          import numpy as np
+          worker=Path('core/smpl_rest_worker.py').resolve()
+          with tempfile.TemporaryDirectory(prefix='model worker ') as tmp:
+              tmp=Path(tmp)
+              reg=np.zeros((22,3));reg[:,0]=1
+              np.savez(tmp/'synthetic.npz', v_template=np.arange(9).reshape(3,3), shapedirs=np.ones((3,3,1)), J_regressor=reg)
+              (tmp/'input.json').write_text('[2]')
+              subprocess.run([sys.executable,str(worker),str(tmp/'synthetic.npz'),str(tmp/'input.json'),str(tmp/'output.json')],cwd=tmp,check=True)
+              joints=json.loads((tmp/'output.json').read_text())
+              assert len(joints)==22 and all(j==[2.0,3.0,4.0] for j in joints)
+          print('Portable model worker with real NumPy: OK')
+          PYMODEL
