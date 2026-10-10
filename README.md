@@ -20,6 +20,12 @@ Public installers for our desktop apps. Source code lives in separate (usually p
 - **macOS Apple Silicon и Intel (DMG или быстрый старт ZIP)**, **Windows 10/11 (быстрый старт ZIP)**, **Linux / любая ОС (переносной ZIP)** → [релиз / release `mocapgate-v0.3.1`](../../releases/tag/mocapgate-v0.3.1)
 - Исходники открыты / open source (MIT): [MaverickGH/mocapgate](https://github.com/MaverickGH/mocapgate). Сборки без подписи; GVHMR и SMPL-X — только некоммерческое использование / non-commercial only.
 
+### SkillGuard — досмотр расширений AI-агента / vet AI-agent extensions
+Проверка скиллов, MCP-серверов и плагинов для Claude Code, Codex, Cursor и Claude Desktop до установки: инъекции агенту, отравление инструментов MCP, увод ключей, опасные команды, уязвимые зависимости. Статический анализ — код не запускается. / Check skills, MCP servers and plugins for Claude Code, Codex, Cursor and Claude Desktop before installing: agent injection, MCP tool poisoning, key exfiltration, dangerous commands, vulnerable dependencies. Static analysis — code is never run.
+
+- **macOS Apple Silicon (DMG)** → [релиз / release `skillguard-v1.0.0`](../../releases/tag/skillguard-v1.0.0)
+- Подпись ad-hoc без нотаризации: первый запуск — правый клик → «Открыть». / Ad-hoc signature, not notarized: right-click → Open on first launch.
+
 ---
 
 Все релизы: вкладка **[Releases](../../releases)**. / All releases: the **[Releases](../../releases)** tab.
