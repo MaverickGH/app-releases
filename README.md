@@ -23,8 +23,8 @@ Public installers for our desktop apps. Source code lives in separate (usually p
 ### SkillGuard — досмотр расширений AI-агента / vet AI-agent extensions
 Проверка скиллов, MCP-серверов и плагинов для Claude Code, Codex, Cursor и Claude Desktop до установки: инъекции агенту, отравление инструментов MCP, увод ключей, опасные команды, уязвимые зависимости. Статический анализ — код не запускается. / Check skills, MCP servers and plugins for Claude Code, Codex, Cursor and Claude Desktop before installing: agent injection, MCP tool poisoning, key exfiltration, dangerous commands, vulnerable dependencies. Static analysis — code is never run.
 
-- **macOS Apple Silicon (DMG)** → [релиз / release `skillguard-v1.0.0`](../../releases/tag/skillguard-v1.0.0)
-- Подпись ad-hoc без нотаризации: первый запуск — правый клик → «Открыть». / Ad-hoc signature, not notarized: right-click → Open on first launch.
+- **macOS Apple Silicon (DMG)** → [релиз / release `skillguard-v1.1.2`](../../releases/tag/skillguard-v1.1.2)
+- Подпись ad-hoc без нотаризации: после первой попытки запуска — «Системные настройки → Конфиденциальность и безопасность → Всё равно открыть». / Ad-hoc signature, not notarized: after the first launch attempt, System Settings → Privacy & Security → Open Anyway.
 
 ---
 
